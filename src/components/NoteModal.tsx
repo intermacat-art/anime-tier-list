@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { TierItem } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 interface NoteModalProps {
   item: TierItem | null;
@@ -41,12 +42,12 @@ export default function NoteModal({ item, onSave, onClose }: NoteModalProps) {
         </div>
 
         <label className="block text-sm text-zinc-400 mb-1">
-          你的觀點（為什麼放在這個 Tier？）
+          {t("noteLabel")}
         </label>
         <textarea
           className="w-full bg-zinc-800 text-white rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           rows={4}
-          placeholder="例：無慘雖然很俗辣，但活了一千年還能壓制所有柱..."
+          placeholder={t("notePlaceholder")}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           maxLength={200}
@@ -58,13 +59,13 @@ export default function NoteModal({ item, onSave, onClose }: NoteModalProps) {
             className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
             onClick={onClose}
           >
-            取消
+            {t("cancel")}
           </button>
           <button
             className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
             onClick={() => { onSave(item.id, note); onClose(); }}
           >
-            儲存
+            {t("save")}
           </button>
         </div>
       </div>

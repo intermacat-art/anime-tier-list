@@ -21,6 +21,7 @@ import type { TierItem, TierRow, TierListMode } from "@/lib/types";
 import { DEFAULT_TIERS } from "@/lib/types";
 import SearchPanel from "./SearchPanel";
 import NoteModal from "./NoteModal";
+import { t } from "@/lib/i18n";
 
 // --- Sortable item ---
 function SortableItem({
@@ -92,7 +93,7 @@ function DroppableTierRow({
         className="w-14 md:w-20 flex items-center justify-center text-xl md:text-2xl font-black flex-shrink-0 cursor-pointer select-none"
         style={{ backgroundColor: tier.color }}
         onDoubleClick={() => { setEditing(true); setEditValue(tier.label); }}
-        title="雙擊修改名稱"
+        title={t("doubleClickRename")}
       >
         {editing ? (
           <input
@@ -122,7 +123,7 @@ function DroppableTierRow({
             <SortableItem key={item.id} item={item} onRightClick={onRightClick} />
           ))}
           {tier.items.length === 0 && !isOver && (
-            <span className="text-zinc-600 text-xs px-2">拖曳至此</span>
+            <span className="text-zinc-600 text-xs px-2">{t("dragHere")}</span>
           )}
         </div>
       </SortableContext>
@@ -148,7 +149,7 @@ function DroppablePool({
   return (
     <div className="mt-4 bg-zinc-900 rounded-xl border border-zinc-700 p-3">
       <h3 className="text-sm font-bold text-zinc-400 mb-2">
-        未排名（拖曳到上方 Tier 中）
+        {t("unranked")}
       </h3>
       <SortableContext id="pool" items={poolIds} strategy={rectSortingStrategy}>
         <div
@@ -171,7 +172,7 @@ function DroppablePool({
           ))}
           {pool.length === 0 && (
             <p className="text-zinc-600 text-sm py-4 w-full text-center">
-              從右側搜尋面板加入{mode === "anime" ? "動畫" : "角色"}
+              {t("addFromSearch")}{mode === "anime" ? t("anime") : t("character")}
             </p>
           )}
         </div>
@@ -183,7 +184,7 @@ function DroppablePool({
 // --- Main editor ---
 export default function TierListEditor() {
   const [mode, setMode] = useState<TierListMode>("anime");
-  const [title, setTitle] = useState("我的 Tier List");
+  const [title, setTitle] = useState(t("myTierList"));
   const [tiers, setTiers] = useState<TierRow[]>(
     DEFAULT_TIERS.map((t) => ({ ...t, items: [] }))
   );
@@ -391,7 +392,7 @@ export default function TierListEditor() {
               }`}
               onClick={() => setMode("anime")}
             >
-              動畫排行
+              {t("animeRank")}
             </button>
             <button
               className={`px-3 py-1.5 text-sm transition-colors ${
@@ -399,7 +400,7 @@ export default function TierListEditor() {
               }`}
               onClick={() => setMode("character")}
             >
-              角色排行
+              {t("charRank")}
             </button>
           </div>
           <div className="flex-1" />
@@ -407,19 +408,19 @@ export default function TierListEditor() {
             className="px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
             onClick={handleReset}
           >
-            重置排名
+            {t("resetRank")}
           </button>
           <button
             className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-500 rounded transition-colors"
             onClick={handleExport}
           >
-            匯出圖片
+            {t("exportImage")}
           </button>
           <button
             className="px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors md:hidden"
             onClick={() => setShowSearch(!showSearch)}
           >
-            {showSearch ? "隱藏搜尋" : "搜尋"}
+            {showSearch ? t("hideSearch") : t("showSearch")}
           </button>
         </div>
 
@@ -437,7 +438,7 @@ export default function TierListEditor() {
               <div className="px-4 py-3 border-b border-zinc-700 flex items-center justify-between">
                 <h2 className="font-bold text-lg">{title}</h2>
                 <span className="text-xs text-zinc-500">
-                  資料來源：
+                  {t("dataSource")}
                   <a href="https://anilist.co" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">AniList</a>
                 </span>
               </div>
@@ -476,7 +477,7 @@ export default function TierListEditor() {
           </DndContext>
 
           <p className="text-xs text-zinc-600 mt-3 text-center">
-            右鍵點擊角色/動畫可以加入觀點解釋
+            {t("rightClickHint")}
           </p>
         </div>
       </div>

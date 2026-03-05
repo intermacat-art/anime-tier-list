@@ -2,9 +2,10 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
-import { searchAnime, searchCharacters, getCharactersByMedia, getSeasonalAnime, getDisplayTitle, getMediaChineseTitle } from "@/lib/anilist";
+import { searchAnime, searchCharacters, getCharactersByMedia, getSeasonalAnime, getDisplayTitle } from "@/lib/anilist";
 import type { AnilistMedia, AnilistCharacter } from "@/lib/anilist";
 import type { TierItem, TierListMode } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 interface SearchPanelProps {
   mode: TierListMode;
@@ -100,7 +101,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
     if (existingIds.has(id)) return;
     const mediaNode = c.media?.nodes?.[0];
     const subtitle = mediaNode
-      ? getMediaChineseTitle(mediaNode)
+      ? getDisplayTitle(mediaNode)
       : selectedAnime
         ? getDisplayTitle(selectedAnime)
         : undefined;
@@ -120,16 +121,23 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
     return "FALL";
   };
 
+  const seasonLabels: Record<string, string> = {
+    WINTER: t("winter"),
+    SPRING: t("spring"),
+    SUMMER: t("summer"),
+    FALL: t("fall"),
+  };
+
   return (
     <div className="flex flex-col h-full bg-zinc-900 border-l border-zinc-700">
       <div className="p-3 border-b border-zinc-700">
         <h3 className="text-sm font-bold text-zinc-300 mb-2">
-          {mode === "anime" ? "搜尋動畫" : "搜尋角色"}
+          {mode === "anime" ? t("searchAnime") : t("searchCharacter")}
         </h3>
         <div className="flex gap-2">
           <input
             className="flex-1 bg-zinc-800 text-white text-sm rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder={mode === "anime" ? "輸入動畫名稱..." : "輸入角色名稱..."}
+            placeholder={mode === "anime" ? t("searchPlaceholderAnime") : t("searchPlaceholderChar")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -138,7 +146,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
             className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-3 py-2 rounded transition-colors"
             onClick={handleSearch}
           >
-            搜尋
+            {t("search")}
           </button>
         </div>
 
@@ -154,36 +162,32 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
                 }`}
                 onClick={() => handleLoadSeason(s)}
               >
-                {s === "WINTER" ? "冬番" : s === "SPRING" ? "春番" : s === "SUMMER" ? "夏番" : "秋番"}
+                {seasonLabels[s]}
               </button>
             ))}
           </div>
         )}
 
         {mode === "character" && !selectedAnime && (
-          <p className="text-xs text-zinc-500 mt-2">
-            搜尋角色名稱，或先在「動畫模式」找到作品再載入角色
-          </p>
+          <p className="text-xs text-zinc-500 mt-2">{t("charHint")}</p>
         )}
       </div>
 
-      {/* Character mode: select anime first */}
       {mode === "character" && selectedAnime && (
         <div className="p-2 bg-zinc-800 border-b border-zinc-700 flex items-center gap-2">
           <button
             className="text-zinc-400 hover:text-white text-sm"
             onClick={() => { setSelectedAnime(null); setAnimeChars([]); }}
           >
-            ← 返回
+            {t("back")}
           </button>
           <span className="text-xs text-zinc-300 truncate">{getDisplayTitle(selectedAnime)}</span>
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto p-2">
-        {loading && <p className="text-zinc-500 text-sm text-center py-4">搜尋中...</p>}
+        {loading && <p className="text-zinc-500 text-sm text-center py-4">{t("searching")}</p>}
 
-        {/* Anime results */}
         {mode === "anime" && !loading && animeResults.map((m) => {
           const id = `anime-${m.id}`;
           const added = existingIds.has(id);
@@ -220,19 +224,18 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
                 className="text-[10px] text-blue-400 hover:underline flex-shrink-0 ml-1"
                 onClick={(e) => e.stopPropagation()}
               >
-                詳情↗
+                {t("detail")}
               </a>
-              {added && <span className="text-xs text-zinc-600 ml-1">已加入</span>}
+              {added && <span className="text-xs text-zinc-600 ml-1">{t("added")}</span>}
             </div>
           );
         })}
 
-        {/* Character search results */}
         {mode === "character" && !loading && !selectedAnime && charResults.map((c) => {
           const id = `char-${c.id}`;
           const added = existingIds.has(id);
           const mediaNode = c.media?.nodes?.[0];
-          const mediaTitle = mediaNode ? getMediaChineseTitle(mediaNode) : undefined;
+          const mediaTitle = mediaNode ? getDisplayTitle(mediaNode) : undefined;
           return (
             <div
               key={c.id}
@@ -258,12 +261,11 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
                   <p className="text-xs text-zinc-600 truncate">{mediaTitle}</p>
                 )}
               </div>
-              {added && <span className="text-xs text-zinc-600 ml-auto">已加入</span>}
+              {added && <span className="text-xs text-zinc-600 ml-auto">{t("added")}</span>}
             </div>
           );
         })}
 
-        {/* Characters from selected anime */}
         {mode === "character" && selectedAnime && !loadingChars && animeChars.map((c) => {
           const id = `char-${c.id}`;
           const added = existingIds.has(id);
@@ -289,11 +291,11 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
                   <p className="text-xs text-zinc-500 truncate">{c.name.full}</p>
                 )}
               </div>
-              {added && <span className="text-xs text-zinc-600 ml-auto">已加入</span>}
+              {added && <span className="text-xs text-zinc-600 ml-auto">{t("added")}</span>}
             </div>
           );
         })}
-        {loadingChars && <p className="text-zinc-500 text-sm text-center py-4">載入角色中...</p>}
+        {loadingChars && <p className="text-zinc-500 text-sm text-center py-4">{t("loadingChars")}</p>}
       </div>
     </div>
   );
