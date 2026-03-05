@@ -21,21 +21,23 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
   const [selectedAnime, setSelectedAnime] = useState<AnilistMedia | null>(null);
   const [animeChars, setAnimeChars] = useState<AnilistCharacter[]>([]);
   const [loadingChars, setLoadingChars] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
   // 預設載入當季動畫
   useEffect(() => {
-    if (initialized || mode !== "anime") return;
-    setInitialized(true);
+    if (mode !== "anime") return;
+    // 只在結果為空且沒有搜尋詞時載入
+    if (animeResults.length > 0 || query.trim()) return;
     const now = new Date();
     const month = now.getMonth();
     const season = month < 3 ? "WINTER" : month < 6 ? "SPRING" : month < 9 ? "SUMMER" : "FALL";
+    let cancelled = false;
     setLoading(true);
     getSeasonalAnime(now.getFullYear(), season)
-      .then((res) => setAnimeResults(res.media))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [initialized, mode]);
+      .then((res) => { if (!cancelled) setAnimeResults(res.media); })
+      .catch((err) => { if (!cancelled) console.error("Failed to load seasonal anime:", err); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;

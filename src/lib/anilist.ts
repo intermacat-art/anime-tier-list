@@ -1,5 +1,6 @@
-// 使用 trace.moe 的中文代理端點，自動注入中文標題
-const ANILIST_API = "https://trace.moe/anilist/";
+// trace.moe 代理自動注入中文標題，官方 API 作為 fallback
+const ANILIST_CHINESE_API = "https://trace.moe/anilist/";
+const ANILIST_OFFICIAL_API = "https://graphql.anilist.co";
 
 export interface AnilistMedia {
   id: number;
@@ -46,11 +47,21 @@ export interface AnilistMediaNode {
 }
 
 async function queryAnilist<T>(query: string, variables: Record<string, unknown>): Promise<T> {
-  const res = await fetch(ANILIST_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ query, variables }),
-  });
+  const body = JSON.stringify({ query, variables });
+  const headers = { "Content-Type": "application/json", Accept: "application/json" };
+
+  // 先嘗試 trace.moe（有中文標題），失敗則 fallback 到官方 API
+  try {
+    const res = await fetch(ANILIST_CHINESE_API, { method: "POST", headers, body });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) return json.data;
+    }
+  } catch {
+    // trace.moe 不可用，繼續用官方 API
+  }
+
+  const res = await fetch(ANILIST_OFFICIAL_API, { method: "POST", headers, body });
   if (!res.ok) throw new Error(`AniList API error: ${res.status}`);
   const json = await res.json();
   if (json.errors) throw new Error(json.errors[0]?.message ?? "AniList query failed");
