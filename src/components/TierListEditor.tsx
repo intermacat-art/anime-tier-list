@@ -6,7 +6,7 @@ import {
   DndContext,
   DragOverlay,
   pointerWithin,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -36,10 +36,11 @@ function SortableItem({
     id: item.id,
     data: { item },
   });
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
+    touchAction: "none",
   };
 
   return (
@@ -198,8 +199,8 @@ export default function TierListEditor() {
   const exportRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })
   );
 
   // Helper: find which container an item is in
