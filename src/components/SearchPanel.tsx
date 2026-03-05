@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { searchAnime, searchCharacters, getCharactersByMedia, getSeasonalAnime, getDisplayTitle, getMediaChineseTitle } from "@/lib/anilist";
 import type { AnilistMedia, AnilistCharacter } from "@/lib/anilist";
@@ -20,6 +20,21 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
   const [selectedAnime, setSelectedAnime] = useState<AnilistMedia | null>(null);
   const [animeChars, setAnimeChars] = useState<AnilistCharacter[]>([]);
   const [loadingChars, setLoadingChars] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // 預設載入當季動畫
+  useEffect(() => {
+    if (initialized || mode !== "anime") return;
+    setInitialized(true);
+    const now = new Date();
+    const month = now.getMonth();
+    const season = month < 3 ? "WINTER" : month < 6 ? "SPRING" : month < 9 ? "SUMMER" : "FALL";
+    setLoading(true);
+    getSeasonalAnime(now.getFullYear(), season)
+      .then((res) => setAnimeResults(res.media))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [initialized, mode]);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
