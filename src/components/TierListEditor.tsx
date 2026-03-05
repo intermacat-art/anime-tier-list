@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import {
   DndContext,
   DragOverlay,
   pointerWithin,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   useDroppable,
@@ -191,11 +192,14 @@ export default function TierListEditor() {
   const [pool, setPool] = useState<TierItem[]>([]);
   const [activeItem, setActiveItem] = useState<TierItem | null>(null);
   const [noteItem, setNoteItem] = useState<TierItem | null>(null);
-  const [showSearch, setShowSearch] = useState(true);
+  const [showSearch, setShowSearch] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
   const exportRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   // Helper: find which container an item is in
@@ -326,6 +330,10 @@ export default function TierListEditor() {
 
   const handleAddItem = useCallback((item: TierItem) => {
     setPool((prev) => [...prev, item]);
+    // 手機上加入後自動關閉搜尋面板
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setShowSearch(false);
+    }
   }, []);
 
   const handleSaveNote = useCallback((id: string, note: string) => {
@@ -397,19 +405,19 @@ export default function TierListEditor() {
   }, [pool, tiers]);
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-white">
+    <div className="flex h-screen bg-zinc-950 text-white relative">
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Toolbar */}
-        <div className="flex items-center gap-2 p-3 border-b border-zinc-800 flex-wrap">
+        <div className="flex items-center gap-1.5 md:gap-2 p-2 md:p-3 border-b border-zinc-800 flex-wrap">
           <input
-            className="bg-zinc-900 text-white font-bold text-lg px-3 py-1 rounded outline-none focus:ring-2 focus:ring-blue-500 w-64"
+            className="bg-zinc-900 text-white font-bold text-sm md:text-lg px-2 md:px-3 py-1 rounded outline-none focus:ring-2 focus:ring-blue-500 w-32 md:w-64"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <div className="flex bg-zinc-800 rounded overflow-hidden">
             <button
-              className={`px-3 py-1.5 text-sm transition-colors ${
+              className={`px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm transition-colors ${
                 mode === "anime" ? "bg-blue-600 text-white" : "text-zinc-400 hover:text-white"
               }`}
               onClick={() => setMode("anime")}
@@ -417,7 +425,7 @@ export default function TierListEditor() {
               {t("animeRank")}
             </button>
             <button
-              className={`px-3 py-1.5 text-sm transition-colors ${
+              className={`px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm transition-colors ${
                 mode === "character" ? "bg-blue-600 text-white" : "text-zinc-400 hover:text-white"
               }`}
               onClick={() => setMode("character")}
@@ -427,19 +435,19 @@ export default function TierListEditor() {
           </div>
           <div className="flex-1" />
           <button
-            className="px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
+            className="px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
             onClick={handleReset}
           >
             {t("resetRank")}
           </button>
           <button
-            className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-500 rounded transition-colors"
+            className="px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm bg-green-600 hover:bg-green-500 rounded transition-colors"
             onClick={handleExport}
           >
             {t("exportImage")}
           </button>
           <button
-            className="px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors md:hidden"
+            className="px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm bg-blue-600 hover:bg-blue-500 rounded transition-colors"
             onClick={() => setShowSearch(!showSearch)}
           >
             {showSearch ? t("hideSearch") : t("showSearch")}
@@ -504,10 +512,20 @@ export default function TierListEditor() {
         </div>
       </div>
 
-      {/* Search panel */}
+      {/* Search panel: full-screen overlay on mobile, side panel on desktop */}
       {showSearch && (
-        <div className="w-72 md:w-80 flex-shrink-0">
-          <SearchPanel mode={mode} onAdd={handleAddItem} />
+        <div className="fixed inset-0 z-40 md:static md:inset-auto md:z-auto md:w-80 md:flex-shrink-0">
+          <div className="h-full flex flex-col">
+            <button
+              className="md:hidden p-2 text-right text-sm text-zinc-400 bg-zinc-900 border-b border-zinc-700"
+              onClick={() => setShowSearch(false)}
+            >
+              {t("hideSearch")} &times;
+            </button>
+            <div className="flex-1 min-h-0">
+              <SearchPanel mode={mode} onAdd={handleAddItem} />
+            </div>
+          </div>
         </div>
       )}
 
