@@ -38,6 +38,8 @@ const messages = {
     charSearchFallback: "找不到角色，以下是相關動畫，點擊可瀏覽角色：",
     charSearchTipChinese: "角色搜尋建議使用英文或日文名（如 Edward Elric）",
     browseChars: "瀏覽角色",
+    year: "年",
+    browseBySeasonHint: "選擇年份與季節來瀏覽動畫，點擊可查看角色",
   },
   en: {
     searchAnime: "Search Anime",
@@ -78,6 +80,8 @@ const messages = {
     charSearchFallback: "No characters found. Related anime below — click to browse characters:",
     charSearchTipChinese: "Try searching character names in English or Japanese (e.g. Edward Elric)",
     browseChars: "Browse characters",
+    year: "",
+    browseBySeasonHint: "Pick a year & season to browse anime, click to view characters",
   },
   ja: {
     searchAnime: "アニメ検索",
@@ -118,6 +122,8 @@ const messages = {
     charSearchFallback: "キャラが見つかりません。関連アニメからキャラを探せます：",
     charSearchTipChinese: "英語または日本語の名前で検索してみてください（例：エドワード・エルリック）",
     browseChars: "キャラを見る",
+    year: "年",
+    browseBySeasonHint: "年とシーズンを選んでアニメを閲覧、クリックでキャラ表示",
   },
 } as const;
 

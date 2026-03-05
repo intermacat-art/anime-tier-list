@@ -23,17 +23,20 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
   const [loadingChars, setLoadingChars] = useState(false);
   const [fallbackAnime, setFallbackAnime] = useState<AnilistMedia[]>([]);
 
-  // 預設載入當季動畫
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth();
+  const curSeason = curMonth < 3 ? "WINTER" : curMonth < 6 ? "SPRING" : curMonth < 9 ? "SUMMER" : "FALL";
+
+  const [selectedYear, setSelectedYear] = useState(curYear);
+  const [selectedSeason, setSelectedSeason] = useState(curSeason);
+
+  // 預設載入當季動畫（兩種模式都載入）
   useEffect(() => {
-    if (mode !== "anime") return;
-    // 只在結果為空且沒有搜尋詞時載入
     if (animeResults.length > 0 || query.trim()) return;
-    const now = new Date();
-    const month = now.getMonth();
-    const season = month < 3 ? "WINTER" : month < 6 ? "SPRING" : month < 9 ? "SUMMER" : "FALL";
     let cancelled = false;
     setLoading(true);
-    getSeasonalAnime(now.getFullYear(), season)
+    getSeasonalAnime(curYear, curSeason)
       .then((res) => { if (!cancelled) setAnimeResults(res.media); })
       .catch((err) => { if (!cancelled) console.error("Failed to load seasonal anime:", err); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -67,13 +70,16 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
     }
   }, [query, mode]);
 
-  const handleLoadSeason = useCallback(async (season: string) => {
+  const handleLoadSeason = useCallback(async (year: number, season: string) => {
     setLoading(true);
     setSelectedAnime(null);
+    setAnimeChars([]);
+    setCharResults([]);
+    setFallbackAnime([]);
     setQuery("");
+    setSelectedYear(year);
+    setSelectedSeason(season);
     try {
-      const now = new Date();
-      const year = now.getFullYear();
       const res = await getSeasonalAnime(year, season);
       setAnimeResults(res.media);
     } catch (e) {
@@ -124,20 +130,16 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
     });
   };
 
-  const currentSeason = () => {
-    const m = new Date().getMonth();
-    if (m < 3) return "WINTER";
-    if (m < 6) return "SPRING";
-    if (m < 9) return "SUMMER";
-    return "FALL";
-  };
-
   const seasonLabels: Record<string, string> = {
     WINTER: t("winter"),
     SPRING: t("spring"),
     SUMMER: t("summer"),
     FALL: t("fall"),
   };
+
+  // 年份列表：當前年份往回到 1990
+  const years: number[] = [];
+  for (let y = curYear; y >= 1990; y--) years.push(y);
 
   return (
     <div className="flex flex-col h-full bg-zinc-900 border-l border-zinc-700">
@@ -161,30 +163,44 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
           </button>
         </div>
 
-        {mode === "anime" && (
-          <div className="flex gap-1 mt-2 flex-wrap">
-            {(["WINTER", "SPRING", "SUMMER", "FALL"] as const).map((s) => (
-              <button
-                key={s}
-                className={`text-xs px-2 py-1 rounded transition-colors ${
-                  s === currentSeason()
-                    ? "bg-blue-600 text-white"
-                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                }`}
-                onClick={() => handleLoadSeason(s)}
+        {!selectedAnime && (
+          <div className="mt-2">
+            <div className="flex gap-1 items-center flex-wrap">
+              <select
+                className="bg-zinc-800 text-zinc-300 text-xs rounded px-2 py-1 outline-none"
+                value={selectedYear}
+                onChange={(e) => {
+                  const y = Number(e.target.value);
+                  setSelectedYear(y);
+                  handleLoadSeason(y, selectedSeason);
+                }}
               >
-                {seasonLabels[s]}
-              </button>
-            ))}
+                {years.map((y) => (
+                  <option key={y} value={y}>{y}{t("year")}</option>
+                ))}
+              </select>
+              {(["WINTER", "SPRING", "SUMMER", "FALL"] as const).map((s) => (
+                <button
+                  key={s}
+                  className={`text-xs px-2 py-1 rounded transition-colors ${
+                    s === selectedSeason && !query.trim()
+                      ? "bg-blue-600 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                  }`}
+                  onClick={() => handleLoadSeason(selectedYear, s)}
+                >
+                  {seasonLabels[s]}
+                </button>
+              ))}
+            </div>
+            {mode === "character" && (
+              <p className="text-xs text-zinc-500 mt-1">{t("browseBySeasonHint")}</p>
+            )}
           </div>
-        )}
-
-        {mode === "character" && !selectedAnime && (
-          <p className="text-xs text-zinc-500 mt-2">{t("charHint")}</p>
         )}
       </div>
 
-      {mode === "character" && selectedAnime && (
+      {selectedAnime && (
         <div className="p-2 bg-zinc-800 border-b border-zinc-700 flex items-center gap-2">
           <button
             className="text-zinc-400 hover:text-white text-sm"
@@ -199,7 +215,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
       <div className="flex-1 overflow-y-auto p-2">
         {loading && <p className="text-zinc-500 text-sm text-center py-4">{t("searching")}</p>}
 
-        {mode === "anime" && !loading && animeResults.map((m) => {
+        {mode === "anime" && !loading && !selectedAnime && animeResults.map((m) => {
           const id = `anime-${m.id}`;
           const added = existingIds.has(id);
           const displayTitle = getDisplayTitle(m);
@@ -228,6 +244,12 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
                   <p className="text-xs text-zinc-600">{m.seasonYear} {m.season}</p>
                 )}
               </div>
+              <button
+                className="text-[10px] text-green-400 hover:text-green-300 flex-shrink-0 ml-1"
+                onClick={(e) => { e.stopPropagation(); handleSelectAnimeForChars(m); }}
+              >
+                {t("browseChars")}
+              </button>
               <a
                 href={`https://anilist.co/anime/${m.id}`}
                 target="_blank"
@@ -277,6 +299,38 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
           );
         })}
 
+        {mode === "character" && !loading && !selectedAnime && charResults.length === 0 && animeResults.length > 0 && fallbackAnime.length === 0 && (
+          animeResults.map((m) => {
+            const displayTitle = getDisplayTitle(m);
+            return (
+              <div
+                key={m.id}
+                className="flex items-center gap-2 p-2 rounded mb-1 hover:bg-zinc-800 cursor-pointer"
+                onClick={() => handleSelectAnimeForChars(m)}
+              >
+                <Image
+                  src={m.coverImage.medium}
+                  alt={displayTitle}
+                  width={40}
+                  height={56}
+                  className="rounded object-cover w-10 h-14 flex-shrink-0"
+                  unoptimized
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-white truncate">{displayTitle}</p>
+                  {displayTitle !== m.title.romaji && (
+                    <p className="text-xs text-zinc-500 truncate">{m.title.romaji}</p>
+                  )}
+                  {m.seasonYear && (
+                    <p className="text-xs text-zinc-600">{m.seasonYear} {m.season}</p>
+                  )}
+                </div>
+                <span className="text-xs text-blue-400 flex-shrink-0">{t("browseChars")}</span>
+              </div>
+            );
+          })
+        )}
+
         {mode === "character" && !loading && !selectedAnime && charResults.length === 0 && fallbackAnime.length > 0 && (
           <div>
             <p className="text-xs text-yellow-500 px-1 py-2">{t("charSearchFallback")}</p>
@@ -310,7 +364,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
           </div>
         )}
 
-        {mode === "character" && selectedAnime && !loadingChars && animeChars.map((c) => {
+        {selectedAnime && !loadingChars && animeChars.map((c) => {
           const id = `char-${c.id}`;
           const added = existingIds.has(id);
           return (
