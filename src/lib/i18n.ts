@@ -40,6 +40,9 @@ const messages = {
     browseChars: "瀏覽角色",
     year: "年",
     browseBySeasonHint: "選擇年份與季節來瀏覽動畫，點擊可查看角色",
+    genderAll: "全部",
+    genderMale: "男",
+    genderFemale: "女",
   },
   en: {
     searchAnime: "Search Anime",
@@ -82,6 +85,9 @@ const messages = {
     browseChars: "Browse characters",
     year: "",
     browseBySeasonHint: "Pick a year & season to browse anime, click to view characters",
+    genderAll: "All",
+    genderMale: "Male",
+    genderFemale: "Female",
   },
   ja: {
     searchAnime: "アニメ検索",
@@ -124,6 +130,9 @@ const messages = {
     browseChars: "キャラを見る",
     year: "年",
     browseBySeasonHint: "年とシーズンを選んでアニメを閲覧、クリックでキャラ表示",
+    genderAll: "全て",
+    genderMale: "男",
+    genderFemale: "女",
   },
 } as const;
 

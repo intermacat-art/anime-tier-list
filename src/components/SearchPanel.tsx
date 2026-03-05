@@ -21,6 +21,7 @@ export default function SearchPanel({ mode, onAdd }: SearchPanelProps) {
   const [animeChars, setAnimeChars] = useState<AnilistCharacter[]>([]);
   const [loadingChars, setLoadingChars] = useState(false);
   const [fallbackAnime, setFallbackAnime] = useState<AnilistMedia[]>([]);
+  const [genderFilter, setGenderFilter] = useState<"all" | "Male" | "Female">("all");
 
   const now = new Date();
   const curYear = now.getFullYear();
@@ -127,6 +128,9 @@ export default function SearchPanel({ mode, onAdd }: SearchPanelProps) {
     });
   };
 
+  const filterByGender = (chars: AnilistCharacter[]) =>
+    genderFilter === "all" ? chars : chars.filter((c) => c.gender === genderFilter);
+
   const seasonLabels: Record<string, string> = {
     WINTER: t("winter"),
     SPRING: t("spring"),
@@ -198,14 +202,29 @@ export default function SearchPanel({ mode, onAdd }: SearchPanelProps) {
       </div>
 
       {selectedAnime && (
-        <div className="p-2 bg-zinc-800 border-b border-zinc-700 flex items-center gap-2">
-          <button
-            className="text-zinc-400 hover:text-white text-sm"
-            onClick={() => { setSelectedAnime(null); setAnimeChars([]); }}
-          >
-            {t("back")}
-          </button>
-          <span className="text-xs text-zinc-300 truncate">{getDisplayTitle(selectedAnime)}</span>
+        <div className="p-2 bg-zinc-800 border-b border-zinc-700">
+          <div className="flex items-center gap-2">
+            <button
+              className="text-zinc-400 hover:text-white text-sm"
+              onClick={() => { setSelectedAnime(null); setAnimeChars([]); setGenderFilter("all"); }}
+            >
+              {t("back")}
+            </button>
+            <span className="text-xs text-zinc-300 truncate">{getDisplayTitle(selectedAnime)}</span>
+          </div>
+          <div className="flex gap-1 mt-1">
+            {(["all", "Male", "Female"] as const).map((g) => (
+              <button
+                key={g}
+                className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                  genderFilter === g ? "bg-blue-600 text-white" : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
+                }`}
+                onClick={() => setGenderFilter(g)}
+              >
+                {g === "all" ? t("genderAll") : g === "Male" ? t("genderMale") : t("genderFemale")}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -256,7 +275,23 @@ export default function SearchPanel({ mode, onAdd }: SearchPanelProps) {
           );
         })}
 
-        {mode === "character" && !loading && !selectedAnime && charResults.map((c) => {
+        {mode === "character" && !loading && !selectedAnime && charResults.length > 0 && (
+          <div className="flex gap-1 px-1 mb-2">
+            {(["all", "Male", "Female"] as const).map((g) => (
+              <button
+                key={g}
+                className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                  genderFilter === g ? "bg-blue-600 text-white" : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
+                }`}
+                onClick={() => setGenderFilter(g)}
+              >
+                {g === "all" ? t("genderAll") : g === "Male" ? t("genderMale") : t("genderFemale")}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {mode === "character" && !loading && !selectedAnime && filterByGender(charResults).map((c) => {
           const mediaNode = c.media?.nodes?.[0];
           const mediaTitle = mediaNode ? getDisplayTitle(mediaNode) : undefined;
           return (
@@ -351,7 +386,7 @@ export default function SearchPanel({ mode, onAdd }: SearchPanelProps) {
           </div>
         )}
 
-        {selectedAnime && !loadingChars && animeChars.map((c) => (
+        {selectedAnime && !loadingChars && filterByGender(animeChars).map((c) => (
           <div
             key={c.id}
             className="flex items-center gap-2 p-2 rounded mb-1 transition-colors hover:bg-zinc-800 cursor-pointer"

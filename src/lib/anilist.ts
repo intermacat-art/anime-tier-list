@@ -30,6 +30,7 @@ export interface AnilistCharacter {
     large: string;
     medium: string;
   };
+  gender?: string | null;
   media?: {
     nodes: AnilistMediaNode[];
   };
@@ -126,6 +127,7 @@ export async function getCharactersByMedia(mediaId: number): Promise<AnilistChar
             id
             name { full native }
             image { large medium }
+            gender
           }
         }
       }
@@ -144,6 +146,7 @@ export async function searchCharacters(search: string, page = 1): Promise<{ char
           id
           name { full native }
           image { large medium }
+          gender
           media(perPage: 1) {
             nodes {
               id
