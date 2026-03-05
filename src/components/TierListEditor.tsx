@@ -198,13 +198,6 @@ export default function TierListEditor() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const existingIds = useMemo(() => {
-    const ids = new Set<string>();
-    pool.forEach((i) => ids.add(i.id));
-    tiers.forEach((t) => t.items.forEach((i) => ids.add(i.id)));
-    return ids;
-  }, [pool, tiers]);
-
   // Helper: find which container an item is in
   const getContainer = useCallback(
     (itemId: string): string | null => {
@@ -353,10 +346,35 @@ export default function TierListEditor() {
 
   const handleExport = useCallback(async () => {
     if (!exportRef.current) return;
+    const node = exportRef.current;
+    const imgs = node.querySelectorAll("img");
+    const originalSrcs = new Map<HTMLImageElement, string>();
+
+    // 透過代理將外部圖片轉成 base64，避免 CORS 問題
+    await Promise.all(
+      Array.from(imgs).map(async (img) => {
+        const src = img.src;
+        if (!src || src.startsWith("data:")) return;
+        originalSrcs.set(img, src);
+        try {
+          const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(src)}`;
+          const res = await fetch(proxyUrl);
+          const blob = await res.blob();
+          const dataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          img.src = dataUrl;
+        } catch { /* keep original src */ }
+      })
+    );
+
     try {
-      const dataUrl = await toPng(exportRef.current, {
+      const dataUrl = await toPng(node, {
         backgroundColor: "#18181b",
         pixelRatio: 2,
+        skipFonts: true,
       });
       const link = document.createElement("a");
       link.download = `${title}.png`;
@@ -364,6 +382,10 @@ export default function TierListEditor() {
       link.click();
     } catch (e) {
       console.error("Export failed", e);
+      alert("Export failed. Please try again.");
+    } finally {
+      // 還原圖片 src
+      originalSrcs.forEach((src, img) => { img.src = src; });
     }
   }, [title]);
 
@@ -485,7 +507,7 @@ export default function TierListEditor() {
       {/* Search panel */}
       {showSearch && (
         <div className="w-72 md:w-80 flex-shrink-0">
-          <SearchPanel mode={mode} onAdd={handleAddItem} existingIds={existingIds} />
+          <SearchPanel mode={mode} onAdd={handleAddItem} />
         </div>
       )}
 

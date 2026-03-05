@@ -10,10 +10,9 @@ import { t } from "@/lib/i18n";
 interface SearchPanelProps {
   mode: TierListMode;
   onAdd: (item: TierItem) => void;
-  existingIds: Set<string>;
 }
 
-export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelProps) {
+export default function SearchPanel({ mode, onAdd }: SearchPanelProps) {
   const [query, setQuery] = useState("");
   const [animeResults, setAnimeResults] = useState<AnilistMedia[]>([]);
   const [charResults, setCharResults] = useState<AnilistCharacter[]>([]);
@@ -103,8 +102,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
   }, []);
 
   const addAnime = (m: AnilistMedia) => {
-    const id = `anime-${m.id}`;
-    if (existingIds.has(id)) return;
+    const id = `anime-${m.id}-${Date.now()}`;
     onAdd({
       id,
       name: getDisplayTitle(m),
@@ -114,8 +112,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
   };
 
   const addCharacter = (c: AnilistCharacter) => {
-    const id = `char-${c.id}`;
-    if (existingIds.has(id)) return;
+    const id = `char-${c.id}-${Date.now()}`;
     const mediaNode = c.media?.nodes?.[0];
     const subtitle = mediaNode
       ? getDisplayTitle(mediaNode)
@@ -216,16 +213,12 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
         {loading && <p className="text-zinc-500 text-sm text-center py-4">{t("searching")}</p>}
 
         {mode === "anime" && !loading && !selectedAnime && animeResults.map((m) => {
-          const id = `anime-${m.id}`;
-          const added = existingIds.has(id);
           const displayTitle = getDisplayTitle(m);
           return (
             <div
               key={m.id}
-              className={`flex items-center gap-2 p-2 rounded mb-1 transition-colors ${
-                added ? "opacity-40" : "hover:bg-zinc-800 cursor-pointer"
-              }`}
-              onClick={() => !added && addAnime(m)}
+              className="flex items-center gap-2 p-2 rounded mb-1 transition-colors hover:bg-zinc-800 cursor-pointer"
+              onClick={() => addAnime(m)}
             >
               <Image
                 src={m.coverImage.medium}
@@ -259,23 +252,18 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
               >
                 {t("detail")}
               </a>
-              {added && <span className="text-xs text-zinc-600 ml-1">{t("added")}</span>}
             </div>
           );
         })}
 
         {mode === "character" && !loading && !selectedAnime && charResults.map((c) => {
-          const id = `char-${c.id}`;
-          const added = existingIds.has(id);
           const mediaNode = c.media?.nodes?.[0];
           const mediaTitle = mediaNode ? getDisplayTitle(mediaNode) : undefined;
           return (
             <div
               key={c.id}
-              className={`flex items-center gap-2 p-2 rounded mb-1 transition-colors ${
-                added ? "opacity-40" : "hover:bg-zinc-800 cursor-pointer"
-              }`}
-              onClick={() => !added && addCharacter(c)}
+              className="flex items-center gap-2 p-2 rounded mb-1 transition-colors hover:bg-zinc-800 cursor-pointer"
+              onClick={() => addCharacter(c)}
             >
               <Image
                 src={c.image.medium}
@@ -294,7 +282,6 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
                   <p className="text-xs text-zinc-600 truncate">{mediaTitle}</p>
                 )}
               </div>
-              {added && <span className="text-xs text-zinc-600 ml-auto">{t("added")}</span>}
             </div>
           );
         })}
@@ -364,35 +351,28 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
           </div>
         )}
 
-        {selectedAnime && !loadingChars && animeChars.map((c) => {
-          const id = `char-${c.id}`;
-          const added = existingIds.has(id);
-          return (
-            <div
-              key={c.id}
-              className={`flex items-center gap-2 p-2 rounded mb-1 transition-colors ${
-                added ? "opacity-40" : "hover:bg-zinc-800 cursor-pointer"
-              }`}
-              onClick={() => !added && addCharacter(c)}
-            >
-              <Image
-                src={c.image.medium}
-                alt={c.name.full}
-                width={40}
-                height={40}
-                className="rounded object-cover w-10 h-10 flex-shrink-0"
-                unoptimized
-              />
-              <div className="min-w-0">
-                <p className="text-sm text-white truncate">{c.name.native || c.name.full}</p>
-                {c.name.native && (
-                  <p className="text-xs text-zinc-500 truncate">{c.name.full}</p>
-                )}
-              </div>
-              {added && <span className="text-xs text-zinc-600 ml-auto">{t("added")}</span>}
+        {selectedAnime && !loadingChars && animeChars.map((c) => (
+          <div
+            key={c.id}
+            className="flex items-center gap-2 p-2 rounded mb-1 transition-colors hover:bg-zinc-800 cursor-pointer"
+            onClick={() => addCharacter(c)}
+          >
+            <Image
+              src={c.image.medium}
+              alt={c.name.full}
+              width={40}
+              height={40}
+              className="rounded object-cover w-10 h-10 flex-shrink-0"
+              unoptimized
+            />
+            <div className="min-w-0">
+              <p className="text-sm text-white truncate">{c.name.native || c.name.full}</p>
+              {c.name.native && (
+                <p className="text-xs text-zinc-500 truncate">{c.name.full}</p>
+              )}
             </div>
-          );
-        })}
+          </div>
+        ))}
         {loadingChars && <p className="text-zinc-500 text-sm text-center py-4">{t("loadingChars")}</p>}
       </div>
     </div>
