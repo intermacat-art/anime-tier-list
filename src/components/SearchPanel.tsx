@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
-import { searchAnime, searchCharacters, getCharactersByMedia, getSeasonalAnime } from "@/lib/anilist";
+import { searchAnime, searchCharacters, getCharactersByMedia, getSeasonalAnime, getDisplayTitle, getMediaChineseTitle } from "@/lib/anilist";
 import type { AnilistMedia, AnilistCharacter } from "@/lib/anilist";
 import type { TierItem, TierListMode } from "@/lib/types";
 
@@ -74,7 +74,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
     if (existingIds.has(id)) return;
     onAdd({
       id,
-      name: m.title.english || m.title.romaji,
+      name: getDisplayTitle(m),
       image: m.coverImage.large,
       subtitle: m.seasonYear ? `${m.seasonYear}` : undefined,
     });
@@ -83,11 +83,17 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
   const addCharacter = (c: AnilistCharacter) => {
     const id = `char-${c.id}`;
     if (existingIds.has(id)) return;
+    const mediaNode = c.media?.nodes?.[0];
+    const subtitle = mediaNode
+      ? getMediaChineseTitle(mediaNode)
+      : selectedAnime
+        ? getDisplayTitle(selectedAnime)
+        : undefined;
     onAdd({
       id,
-      name: c.name.full,
+      name: c.name.native || c.name.full,
       image: c.image.large,
-      subtitle: c.media?.nodes?.[0]?.title?.romaji ?? selectedAnime?.title.romaji ?? undefined,
+      subtitle,
     });
   };
 
@@ -155,7 +161,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
           >
             ← 返回
           </button>
-          <span className="text-xs text-zinc-300 truncate">{selectedAnime.title.romaji}</span>
+          <span className="text-xs text-zinc-300 truncate">{getDisplayTitle(selectedAnime)}</span>
         </div>
       )}
 
@@ -166,6 +172,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
         {mode === "anime" && !loading && animeResults.map((m) => {
           const id = `anime-${m.id}`;
           const added = existingIds.has(id);
+          const displayTitle = getDisplayTitle(m);
           return (
             <div
               key={m.id}
@@ -176,15 +183,17 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
             >
               <Image
                 src={m.coverImage.medium}
-                alt={m.title.romaji}
+                alt={displayTitle}
                 width={40}
                 height={56}
                 className="rounded object-cover w-10 h-14 flex-shrink-0"
                 unoptimized
               />
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-white truncate">{m.title.english || m.title.romaji}</p>
-                <p className="text-xs text-zinc-500 truncate">{m.title.romaji}</p>
+                <p className="text-sm text-white truncate">{displayTitle}</p>
+                {displayTitle !== m.title.romaji && (
+                  <p className="text-xs text-zinc-500 truncate">{m.title.romaji}</p>
+                )}
                 {m.seasonYear && (
                   <p className="text-xs text-zinc-600">{m.seasonYear} {m.season}</p>
                 )}
@@ -207,6 +216,8 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
         {mode === "character" && !loading && !selectedAnime && charResults.map((c) => {
           const id = `char-${c.id}`;
           const added = existingIds.has(id);
+          const mediaNode = c.media?.nodes?.[0];
+          const mediaTitle = mediaNode ? getMediaChineseTitle(mediaNode) : undefined;
           return (
             <div
               key={c.id}
@@ -224,9 +235,12 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
                 unoptimized
               />
               <div className="min-w-0">
-                <p className="text-sm text-white truncate">{c.name.full}</p>
-                {c.media?.nodes?.[0] && (
-                  <p className="text-xs text-zinc-500 truncate">{c.media.nodes[0].title.romaji}</p>
+                <p className="text-sm text-white truncate">{c.name.native || c.name.full}</p>
+                {c.name.native && (
+                  <p className="text-xs text-zinc-500 truncate">{c.name.full}</p>
+                )}
+                {mediaTitle && (
+                  <p className="text-xs text-zinc-600 truncate">{mediaTitle}</p>
                 )}
               </div>
               {added && <span className="text-xs text-zinc-600 ml-auto">已加入</span>}
@@ -255,9 +269,9 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
                 unoptimized
               />
               <div className="min-w-0">
-                <p className="text-sm text-white truncate">{c.name.full}</p>
+                <p className="text-sm text-white truncate">{c.name.native || c.name.full}</p>
                 {c.name.native && (
-                  <p className="text-xs text-zinc-500 truncate">{c.name.native}</p>
+                  <p className="text-xs text-zinc-500 truncate">{c.name.full}</p>
                 )}
               </div>
               {added && <span className="text-xs text-zinc-600 ml-auto">已加入</span>}

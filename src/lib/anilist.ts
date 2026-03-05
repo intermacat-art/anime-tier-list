@@ -1,4 +1,5 @@
-const ANILIST_API = "https://graphql.anilist.co";
+// 使用 trace.moe 的中文代理端點，自動注入中文標題到 synonyms
+const ANILIST_API = "https://trace.moe/anilist/";
 
 export interface AnilistMedia {
   id: number;
@@ -7,6 +8,7 @@ export interface AnilistMedia {
     english: string | null;
     native: string | null;
   };
+  synonyms?: string[];
   coverImage: {
     large: string;
     medium: string;
@@ -27,7 +29,7 @@ export interface AnilistCharacter {
     medium: string;
   };
   media?: {
-    nodes: { title: { romaji: string } }[];
+    nodes: { id: number; title: { romaji: string; native: string | null }; synonyms?: string[] }[];
   };
 }
 
@@ -43,6 +45,36 @@ async function queryAnilist<T>(query: string, variables: Record<string, unknown>
   return json.data;
 }
 
+/**
+ * 從 synonyms 中找中文標題。
+ * trace.moe 代理會把中文標題注入到 synonyms 陣列中。
+ * 中文標題通常包含中日韓文字。
+ */
+function findChineseTitle(synonyms?: string[]): string | null {
+  if (!synonyms || synonyms.length === 0) return null;
+  // 優先找繁體中文（含常見中文字但不含日文假名）
+  const zhRegex = /[\u4e00-\u9fff]/;
+  const jpKana = /[\u3040-\u309f\u30a0-\u30ff]/;
+  for (const s of synonyms) {
+    if (zhRegex.test(s) && !jpKana.test(s)) return s;
+  }
+  return null;
+}
+
+/** 取得顯示用標題：中文 > 英文 > 日文羅馬字 */
+export function getDisplayTitle(media: AnilistMedia): string {
+  const zh = findChineseTitle(media.synonyms);
+  if (zh) return zh;
+  return media.title.english || media.title.romaji;
+}
+
+/** 取得作品的中文標題（給角色的 subtitle 用） */
+export function getMediaChineseTitle(media: { title: { romaji: string; native: string | null }; synonyms?: string[] }): string {
+  const zh = findChineseTitle(media.synonyms);
+  if (zh) return zh;
+  return media.title.romaji;
+}
+
 export async function searchAnime(search: string, page = 1): Promise<{ media: AnilistMedia[]; hasNext: boolean }> {
   const query = `
     query ($search: String, $page: Int) {
@@ -51,6 +83,7 @@ export async function searchAnime(search: string, page = 1): Promise<{ media: An
         media(search: $search, type: ANIME, sort: POPULARITY_DESC) {
           id
           title { romaji english native }
+          synonyms
           coverImage { large medium }
           format
           seasonYear
@@ -71,6 +104,7 @@ export async function getSeasonalAnime(year: number, season: string, page = 1): 
         media(season: $season, seasonYear: $seasonYear, type: ANIME, sort: POPULARITY_DESC) {
           id
           title { romaji english native }
+          synonyms
           coverImage { large medium }
           format
           seasonYear
@@ -111,7 +145,11 @@ export async function searchCharacters(search: string, page = 1): Promise<{ char
           name { full native }
           image { large medium }
           media(perPage: 1) {
-            nodes { title { romaji } }
+            nodes {
+              id
+              title { romaji native }
+              synonyms
+            }
           }
         }
       }

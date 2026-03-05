@@ -75,20 +75,41 @@ function SortableItem({
 function DroppableTierRow({
   tier,
   onRightClick,
+  onRenameLabel,
 }: {
   tier: TierRow;
   onRightClick: (item: TierItem) => void;
+  onRenameLabel: (tierId: string, newLabel: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: tier.id });
   const itemIds = tier.items.map((i) => i.id);
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(tier.label);
 
   return (
     <div className="flex border-b border-zinc-700 min-h-[4.5rem] md:min-h-[5.5rem]">
       <div
-        className="w-14 md:w-20 flex items-center justify-center text-xl md:text-2xl font-black flex-shrink-0"
+        className="w-14 md:w-20 flex items-center justify-center text-xl md:text-2xl font-black flex-shrink-0 cursor-pointer select-none"
         style={{ backgroundColor: tier.color }}
+        onDoubleClick={() => { setEditing(true); setEditValue(tier.label); }}
+        title="雙擊修改名稱"
       >
-        {tier.label}
+        {editing ? (
+          <input
+            className="w-full h-full bg-transparent text-center text-xl md:text-2xl font-black outline-none text-white"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => { onRenameLabel(tier.id, editValue || tier.label); setEditing(false); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { onRenameLabel(tier.id, editValue || tier.label); setEditing(false); }
+              if (e.key === "Escape") setEditing(false);
+            }}
+            autoFocus
+            maxLength={10}
+          />
+        ) : (
+          tier.label
+        )}
       </div>
       <SortableContext id={tier.id} items={itemIds} strategy={rectSortingStrategy}>
         <div
@@ -325,6 +346,10 @@ export default function TierListEditor() {
     setTiers((prev) => prev.map((t) => ({ ...t, items: t.items.filter((i) => i.id !== id) })));
   }, []);
 
+  const handleRenameLabel = useCallback((tierId: string, newLabel: string) => {
+    setTiers((prev) => prev.map((t) => (t.id === tierId ? { ...t, label: newLabel } : t)));
+  }, []);
+
   const handleExport = useCallback(async () => {
     if (!exportRef.current) return;
     try {
@@ -421,6 +446,7 @@ export default function TierListEditor() {
                   key={tier.id}
                   tier={tier}
                   onRightClick={setNoteItem}
+                  onRenameLabel={handleRenameLabel}
                 />
               ))}
             </div>
