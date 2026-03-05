@@ -71,7 +71,7 @@ export async function searchAnime(search: string, page = 1): Promise<{ media: An
         pageInfo { hasNextPage }
         media(search: $search, type: ANIME, sort: POPULARITY_DESC) {
           id
-          title { romaji english native chinese }
+          title { romaji english native }
           synonyms
           coverImage { large medium }
           format
@@ -92,7 +92,7 @@ export async function getSeasonalAnime(year: number, season: string, page = 1): 
         pageInfo { hasNextPage }
         media(season: $season, seasonYear: $seasonYear, type: ANIME, sort: POPULARITY_DESC) {
           id
-          title { romaji english native chinese }
+          title { romaji english native }
           synonyms
           coverImage { large medium }
           format
@@ -136,7 +136,7 @@ export async function searchCharacters(search: string, page = 1): Promise<{ char
           media(perPage: 1) {
             nodes {
               id
-              title { romaji english native chinese }
+              title { romaji english native }
               synonyms
             }
           }
