@@ -35,6 +35,9 @@ const messages = {
     notePlaceholder: "例：無慘雖然很俗辣，但活了一千年還能壓制所有柱...",
     save: "儲存",
     cancel: "取消",
+    charSearchFallback: "找不到角色，以下是相關動畫，點擊可瀏覽角色：",
+    charSearchTipChinese: "角色搜尋建議使用英文或日文名（如 Edward Elric）",
+    browseChars: "瀏覽角色",
   },
   en: {
     searchAnime: "Search Anime",
@@ -72,6 +75,9 @@ const messages = {
     notePlaceholder: "e.g. This character is underrated because...",
     save: "Save",
     cancel: "Cancel",
+    charSearchFallback: "No characters found. Related anime below — click to browse characters:",
+    charSearchTipChinese: "Try searching character names in English or Japanese (e.g. Edward Elric)",
+    browseChars: "Browse characters",
   },
   ja: {
     searchAnime: "アニメ検索",
@@ -109,6 +115,9 @@ const messages = {
     notePlaceholder: "例：このキャラは過小評価されている...",
     save: "保存",
     cancel: "キャンセル",
+    charSearchFallback: "キャラが見つかりません。関連アニメからキャラを探せます：",
+    charSearchTipChinese: "英語または日本語の名前で検索してみてください（例：エドワード・エルリック）",
+    browseChars: "キャラを見る",
   },
 } as const;
 

@@ -21,6 +21,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
   const [selectedAnime, setSelectedAnime] = useState<AnilistMedia | null>(null);
   const [animeChars, setAnimeChars] = useState<AnilistCharacter[]>([]);
   const [loadingChars, setLoadingChars] = useState(false);
+  const [fallbackAnime, setFallbackAnime] = useState<AnilistMedia[]>([]);
 
   // 預設載入當季動畫
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
     if (!query.trim()) return;
     setLoading(true);
     setSelectedAnime(null);
+    setFallbackAnime([]);
     try {
       if (mode === "anime") {
         const res = await searchAnime(query);
@@ -50,6 +52,13 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
       } else {
         const res = await searchCharacters(query);
         setCharResults(res.characters);
+        // 角色搜尋無結果時，自動用同樣關鍵字搜動畫作為 fallback
+        if (res.characters.length === 0) {
+          try {
+            const animeRes = await searchAnime(query);
+            setFallbackAnime(animeRes.media);
+          } catch { /* ignore */ }
+        }
       }
     } catch (e) {
       console.error(e);
@@ -267,6 +276,39 @@ export default function SearchPanel({ mode, onAdd, existingIds }: SearchPanelPro
             </div>
           );
         })}
+
+        {mode === "character" && !loading && !selectedAnime && charResults.length === 0 && fallbackAnime.length > 0 && (
+          <div>
+            <p className="text-xs text-yellow-500 px-1 py-2">{t("charSearchFallback")}</p>
+            <p className="text-xs text-zinc-600 px-1 mb-2">{t("charSearchTipChinese")}</p>
+            {fallbackAnime.map((m) => {
+              const displayTitle = getDisplayTitle(m);
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-2 p-2 rounded mb-1 hover:bg-zinc-800 cursor-pointer"
+                  onClick={() => handleSelectAnimeForChars(m)}
+                >
+                  <Image
+                    src={m.coverImage.medium}
+                    alt={displayTitle}
+                    width={40}
+                    height={56}
+                    className="rounded object-cover w-10 h-14 flex-shrink-0"
+                    unoptimized
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-white truncate">{displayTitle}</p>
+                    {displayTitle !== m.title.romaji && (
+                      <p className="text-xs text-zinc-500 truncate">{m.title.romaji}</p>
+                    )}
+                  </div>
+                  <span className="text-xs text-blue-400 flex-shrink-0">{t("browseChars")}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {mode === "character" && selectedAnime && !loadingChars && animeChars.map((c) => {
           const id = `char-${c.id}`;
